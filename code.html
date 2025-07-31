@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facial Emotion Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <style>
+        .video-container {
+            position: relative;
+            margin: 0 auto;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .video-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .emotion-bars {
+            height: 10px;
+            border-radius: 5px;
+            transition: width 0.5s ease-out;
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen p-6 md:p-10">
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">Facial Emotion Detection</h1>
+            <p class="text-gray-600">Real-time emotion recognition using advanced AI algorithms</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            <div class="video-container bg-gray-900">
+                <video id="video" width="100%" height="auto" autoplay muted playsinline></video>
+                <canvas id="canvas" width="640" height="480"></canvas>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-xl p-6 glass-morphism">
+                <div class="mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Current Emotion Analysis</h2>
+                    <div class="flex items-center justify-center mb-8">
+                        <div id="dominant-emotion" class="text-5xl font-bold text-center p-4 rounded-full w-32 h-32 flex items-center justify-center shadow-lg bg-gradient-to-br from-purple-200 to-blue-200 pulse-animation animate-pulse">
+                            😊
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex items-center">
+                            <span class="w-24 text-sm md:text-base font-medium text-gray-700">Happy</span>
+                            <div class="flex-1 hPrep-4 bg-gray-200 rounded-full overflow-hidden">
+                                <div id="happy-bar" class="emotion-bars h-full bg-green-500" style="width: 0%"></div>
+                            </div>
+                            <span id="happy-value" class="ml-2 text-sm text-gray-600 w-10">0%</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-24 text-sm md:text-base font-medium text-gray-700">Sad</span>
+                            <div class="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
+                                <div id="sad-bar" class="emotion-bars h-full bg-blue-500" style="width: 0%"></div>
+                            </div>
+                            <span id="sad-value" class="ml-2 text-sm text-gray-600 w-10">0%</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-24 text-sm md:text-base font-medium text-gray-700">Angry</span>
+                            <div class="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
+                                <div id="angry-bar" class="emotion-bars h-full bg-red-500" style="width: 0%"></div>
+                            </div>
+                            <span id="angry-value" class="ml-2 text-sm text-gray-600 w-10">0%</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-24 text-sm md:text-base font-medium text-gray-700">Surprised</span>
+                            <div class="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
+                                <div id="surprised-bar" class="emotion-bars h-full bg-yellow-500" style="width: 0%"></div>
+                            </div>
+                            <span id="surprised-value" class="ml-2 text-sm text-gray-600 w-10">0%</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-24 text-sm md:text-base font-medium text-gray-700">Fearful</span>
+                            <div class="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
+                                <div id="fearful-bar" class="emotion-bars h-full bg-purple-500" style="width: 0%"></div>
+                            </div>
+                            <span id="fearful-value" class="ml-2 text-sm text-gray-600 w-10">0%</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-24 text-sm md:text-base font-medium text-gray-700">Disgusted</span>
+                            <div class="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
+                                <div id="disgusted-bar" class="emotion-bars h-full bg-indigo-500" style="width: 0%"></div>
+                            </div>
+                            <span id="disgusted-value" class="ml-2 text-sm text-gray-600 w-10">0%</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-24 text-sm md:text-base font-medium text-gray-700">Neutral</span>
+                            <div class="flex-1 h-4 bg-gray-200 rounded-full overflow-hidden">
+                                <div id="neutral-bar" class="emotion-bars h-full bg-gray-500" style="width: 0%"></div>
+                            </div>
+                            <span id="neutral-value" class="ml-2 text-sm text-gray-600 w-10">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <button id="startBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">
+                        Start Detection
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-12 bg-white rounded-xl shadow-md overflow-hidden glass-morphism">
+            <div class="p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">About This Project</h2>
+                <p class="text-gray-600 mb-4">
+                    This facial emotion detection system uses TensorFlow.js and the Face API to analyze your facial expressions in real-time. The AI model detects 7 basic emotions with probability scores.
+                </p>
+                <div class="flex flex-wrap gap-4">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                        <span class="text-sm">Happy</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                        <span class="text-sm">Sad</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                        <span class="text-sm">Angry</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                        <span class="text-sm">Surprised</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-purple-500 mr-2"></div>
+                        <span class="text-sm">Fearful</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-indigo-500 mr-2"></div>
+                        <span class="text-sm">Disgusted</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-gray-500 mr-2"></div>
+                        <span class="text-sm">Neutral</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startBtn = document.getElementById('startBtn');
+        const emotionElements = {
+            happy: {
+                bar: document.getElementById('happy-bar'),
+                value: document.getElementById('happy-value')
+            },
+            sad: {
+                bar: document.getElementById('sad-bar'),
+                value: document.getElementById('sad-value')
+            },
+            angry: {
+                bar: document.getElementById('angry-bar'),
+                value: document.getElementById('angry-value')
+            },
+            surprised: {
+                bar: document.getElementById('surprised-bar'),
+                value: document.getElementById('surprised-value')
+            },
+            fearful: {
+                bar: document.getElementById('fearful-bar'),
+                value: document.getElementById('fearful-value')
+            },
+            disgusted: {
+                bar: document.getElementById('disgusted-bar'),
+                value: document.getElementById('disgusted-value')
+            },
+            neutral: {
+                bar: document.getElementById('neutral-bar'),
+                value: document.getElementById('neutral-value')
+            }
+        };
+        const dominantEmotionElement = document.getElementById('dominant-emotion');
+
+        // Load models
+        async function loadModels() {
+            try {
+                await faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
+                await faceapi.nets.faceRecognitionNet.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
+                await faceapi.nets.faceExpressionNet.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models');
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start Detection';
+            } catch (error) {
+                console.error('Error loading models:', error);
+                startBtn.textContent = 'Error Loading Models';
+            }
+        }
+
+        // Start video stream
+        async function startVideo() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: 640, 
+                        height: 480,
+                        facingMode: "user" 
+                    }, 
+                    audio: false 
+                });
+                video.srcObject = stream;
+                startDetection();
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                startBtn.textContent = 'Camera Access Denied';
+            }
+        }
+
+        // Start emotion detection
+        function startDetection() {
+            startBtn.textContent = 'Detecting...';
+            startBtn.disabled = true;
+
+            const displaySize = { width: video.width, height: video.height };
+            faceapi.matchDimensions(canvas, displaySize);
+
+            setInterval(async () => {
+                const detections = await faceapi.detectAllFaces(video, 
+                    new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceExpressions();
+                
+                const resizedDetections = faceapi.resizeResults(detections, displaySize);
+                canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+                faceapi.draw.drawDetections(canvas, resizedDetections);
+                faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+
+                if (resizedDetections.length > 0) {
+                    const expressions = resizedDetections[0].expressions;
+                    updateEmotionUI(expressions);
+                }
+            }, 300);
+        }
+
+        // Update emotion visualization
+        function updateEmotionUI(expressions) {
+            let dominantEmotion = '';
+            let maxProbability = 0;
+
+            // Update all emotion bars and find dominant emotion
+            for (const emotion in expressions) {
+                const probability = expressions[emotion];
+                const formattedValue = Math.round(probability * 100);
+
+                if (probability > maxProbability) {
+                    maxProbability = probability;
+                    dominantEmotion = emotion;
+                }
+
+                if (emotionElements[emotion]) {
+                    emotionElements[emotion].bar.style.width = `${formattedValue}%`;
+                    emotionElements[emotion].value.textContent = `${formattedValue}%`;
+
+                    // Dynamic opacity based on probability
+                    const opacity = 0.3 + (probability * 0.7);
+                    emotionElements[emotion].bar.style.opacity = opacity;
+                }
+            }
+
+            // Update dominant emotion display
+            if (dominantEmotion) {
+                let emoji;
+                switch (dominantEmotion) {
+                    case 'happy': emoji = '😊'; break;
+                    case 'sad': emoji = '😢'; break;
+                    case 'angry': emoji = '😠'; break;
+                    case 'surprised': emoji = '😲'; break;
+                    case 'fearful': emoji = '😨'; break;
+                    case 'disgusted': emoji = '🤢'; break;
+                    case 'neutral': emoji = '😐'; break;
+                    default: emoji = '❓';
+                }
+                dominantEmotionElement.textContent = emoji;
+
+                // Add color effect based on emotion
+                let colorClass;
+                switch (dominantEmotion) {
+                    case 'happy': colorClass = 'from-green-200 to-blue-200'; break;
+                    case 'sad': colorClass = 'from-blue-200 to-purple-200'; break;
+                    case 'angry': colorClass = 'from-red-200 to-orange-200'; break;
+                    case 'surprised': colorClass = 'from-yellow-200 to-orange-200'; break;
+                    case 'fearful': colorClass = 'from-purple-200 to-indigo-200'; break;
+                    case 'disgusted': colorClass = 'from-blue-200 to-teal-200'; break;
+                    case 'neutral': colorClass = 'from-gray-200 to-blue-200'; break;
+                    default: colorClass = 'from-gray-200 to-blue-200';
+                }
+                dominantEmotionElement.className = `text-5xl font-bold text-center p-4 rounded-full w-32 h-32 flex items-center justify-center shadow-lg bg-gradient-to-br ${colorClass} pulse-animation`;
+            }
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', () => {
+            startBtn.textContent = 'Loading Models...';
+            startBtn.disabled = true;
+            loadModels().then(() => {
+                startBtn.textContent = 'Starting Camera...';
+                startVideo();
+            });
+        });
+
+        // Initialize
+        startBtn.disabled = true;
+        startBtn.textContent = 'Loading...';
+        loadModels();
+    </script>
+</body>
+</html>
+
